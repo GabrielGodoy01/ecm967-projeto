@@ -11,6 +11,7 @@ const typeDefinitions = `
 type Query {
     totaisPorCategoria: Categories!,
     getMessagesByCategory(category: String!): [Message!]!,
+    getLogs(login: String!, pw: String!): [Log!]!,
 },
 
 type User{
@@ -31,6 +32,11 @@ type Categories {
     geral: Int!,
     esportes: Int!,
     cinema: Int!,
+}
+
+type Log {
+    operation: String!,
+    time: String!,
 }
 
 type Mutation {
@@ -64,9 +70,18 @@ type Categories = {
     cinema: number,
 }
 
+type Log = {
+    operation: string,
+    time: string,
+}
+
 function custom_sort(a: Message, b: Message) {
     return new Date(a.time).getTime() - new Date(b.time).getTime();
 }
+
+const logs: Log[] = [
+    
+]
 
 const users: User[] = [
     {
@@ -114,6 +129,10 @@ const resolvers = {
                 esportes: esportes,
                 geral: geral,
             }
+            logs.push({
+                operation: 'Query',
+                time: Date().toLocaleString()
+            })
             return categories
         },
         getMessagesByCategory: (parent: unknown, args: { category: string }) => {
@@ -121,11 +140,27 @@ const resolvers = {
             for(let i = 0; i < messages.length; i++) {
 
                 if(messages[i].category === args.category) {
-                    console.log(messages[i].category)
                     messagesFilter.push(messages[i])
                 }
             }
+            
+            let log: Log = {
+                operation: 'Query',
+                time: Date().toLocaleString()
+            }
+            logs.push(log)
             return messagesFilter
+        },
+        getLogs : (parent: unknown, args: { login: string, pw: string }) => {
+            if(args.login === 'admin' && args.pw === 'admin') {
+                return logs
+            } else {
+                return Promise.reject(
+                    new GraphQLError(
+                    `Não é admin.`
+                    )
+                )
+            }
         }
     },
     Mutation: {
@@ -148,6 +183,10 @@ const resolvers = {
             messages.push(message)
             messages.sort(custom_sort)
             pubSub.publish('message', args.category, message)
+            logs.push({
+                operation: 'Mutation',
+                time: Date().toLocaleString()
+            })
             return message
         },
         userSignUp: (parent: unknown, args: { login: string, pw: string }) => {
@@ -160,6 +199,10 @@ const resolvers = {
                 messages: []
             }
             users.push(user)
+            logs.push({
+                operation: 'Mutation',
+                time: Date().toLocaleString()
+            })
             return user
         },
     },
@@ -170,6 +213,10 @@ const resolvers = {
                     for(let i = 0; i < users.length; i++) {
                         if(users[i].login == args.login && users[i].pw == args.pw) {
                             users[i].categories.push(args.category)
+                            logs.push({
+                                operation: 'Subscription',
+                                time: Date().toLocaleString()
+                            })
                             return pubSub.subscribe('message', args.category)
                         } 
                     } 
