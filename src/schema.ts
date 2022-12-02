@@ -6,10 +6,11 @@ import { createPubSub } from 'graphql-yoga'
 
 const pubSub = createPubSub()
 
+
 const typeDefinitions = `
 type Query {
-    users: [User!]!,
-    messages: [Message!]!,
+    totaisPorCategoria: Categories!,
+    getMessagesByCategory(category: String!): [Message!]!,
 },
 
 type User{
@@ -19,7 +20,6 @@ type User{
     messages: [Message!]!,
 },
 
-
 type Message {
     id: String!
     content: String!
@@ -27,12 +27,19 @@ type Message {
     category: String!
 },
 
+type Categories {
+    geral: Int!,
+    esportes: Int!,
+    cinema: Int!,
+}
+
 type Mutation {
     postMessage(content: String!, category: String!): Message!,
+    userSignUp(login: String!, pw: String!): User!,
 }
 
 type Subscription {
-    userCategorySubscribe(category: String!): String!,
+    userCategorySubscribe(login: String!, pw: String!, category: String!): String!,
 }
 `
 
@@ -40,6 +47,7 @@ type User = {
     id: string
     login: string
     pw: string
+    categories: string[]
     messages: Message[]
 }
 
@@ -48,6 +56,12 @@ type Message = {
     content: string
     time: string
     category: string
+}
+
+type Categories = {
+    geral: number,
+    esportes: number,
+    cinema: number,
 }
 
 function custom_sort(a: Message, b: Message) {
@@ -59,11 +73,12 @@ const users: User[] = [
       id: '0',
       login: 'Gabriel',
       pw: '123',
+      categories: ['geral'],
       messages: [{
         id: "0",
         content: "Olá Mundo",
         category: "geral",
-        time: 'Fri Dec 02 2022 11:37:13 GMT-0300 (Horário Padrão de Brasília)'
+        time: 'Fri Dec 04 2022 11:37:13 GMT-0300 (Horário Padrão de Brasília)'
     },]
     }
   ]
@@ -73,14 +88,45 @@ const users: User[] = [
       id: '0',
       content: 'Olá Mundo',
       category: "geral",
-      time: '31/11/2022, 11:00:00 AM'
+      time: 'Fri Dec 22 2022 11:37:13 GMT-0300 (Horário Padrão de Brasília)'
     },
   ]
 
 const resolvers = {
     Query: {
-        users: () => users,
-        messages: () => messages
+        totaisPorCategoria: () => {
+            let geral = 0;
+            let cinema = 0;
+            let esportes = 0;
+            for(let i = 0; i < users.length; i++) {
+                if(users[i].categories.includes('geral')) {
+                    geral++
+                }
+                if(users[i].categories.includes('cinema')) {
+                    cinema++
+                }
+                if(users[i].categories.includes('esportes')) {
+                    esportes++
+                }
+            }
+            const categories: Categories = {
+                cinema: cinema,
+                esportes: esportes,
+                geral: geral,
+            }
+            return categories
+        },
+        getMessagesByCategory: (parent: unknown, args: { category: string }) => {
+            const messagesFilter : Message[] = []
+            for(let i = 0; i < messages.length; i++) {
+
+                if(messages[i].category === args.category) {
+                    console.log(messages[i].category)
+                    messagesFilter.push(messages[i])
+                }
+            }
+            return messagesFilter
+        }
     },
     Mutation: {
         postMessage: (parent: unknown, args: { content: string, category: string }) => {
@@ -101,15 +147,37 @@ const resolvers = {
             }
             messages.push(message)
             messages.sort(custom_sort)
-            pubSub.publish('message', args.content, message)
+            pubSub.publish('message', args.category, message)
             return message
+        },
+        userSignUp: (parent: unknown, args: { login: string, pw: string }) => {
+            let usersCount = users.length
+            const user: User = {
+                id: `${usersCount}`,
+                login: args.login,
+                pw: args.pw,
+                categories: [],
+                messages: []
+            }
+            users.push(user)
+            return user
         },
     },
     Subscription: {
         userCategorySubscribe: {
-            subscribe: async function* (parent: unknown, args: { category: string })  {
+            subscribe: async function* (parent: unknown, args: { login: string, pw: string, category: string })  {
                 if(args.category == 'cinema' || args.category == 'esportes' ||  args.category == 'geral') {
-                        return pubSub.subscribe('message', args.category)
+                    for(let i = 0; i < users.length; i++) {
+                        if(users[i].login == args.login && users[i].pw == args.pw) {
+                            users[i].categories.push(args.category)
+                            return pubSub.subscribe('message', args.category)
+                        } 
+                    } 
+                    return Promise.reject(
+                        new GraphQLError(
+                        `Login ou senha incorretos ou usuário não cadastrado.`
+                        )
+                    )  
                 } else {
                     return Promise.reject(
                         new GraphQLError(
