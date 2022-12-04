@@ -1,11 +1,11 @@
 {
   "name": "ecm967-projeto",
   "version": "1.0.0",
-  "description": "",
+  "description": "ECM967 - Tópicos Avançados em Back End",
   "main": "main.ts",
   "scripts": {
     "dev": "cross-env NODE_ENV=development ts-node-dev --exit-child --respawn src/main.ts",
-    "start": "ts-node src/main.ts"
+    "start": "nodemon src/main.js --ext js,graphql  --exec babel-node"
   },
   "repository": {
     "type": "git",
@@ -18,15 +18,14 @@
   },
   "homepage": "https://github.com/GabrielGodoy01/ecm967-projeto#readme",
   "devDependencies": {
-    "@types/node": "18.11.10",
-    "cross-env": "7.0.3",
-    "ts-node": "10.9.1",
-    "ts-node-dev": "2.0.0",
-    "typescript": "4.9.3"
+    "nodemon": "^2.0.20"
   },
   "dependencies": {
     "@graphql-tools/schema": "^9.0.10",
     "graphql": "^16.6.0",
-    "graphql-yoga": "^3.1.1"
+    "graphql-yoga": "^3.1.1",
+    "@graphql-yoga/node": "^2.13.13",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0"
   }
 }

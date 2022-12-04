@@ -1,0 +1,42 @@
+type Query {
+    totaisPorCategoria: Categories!,
+    getMessagesByCategory(category: String!): [Message!]!,
+    getLogs(login: String!, pw: String!): [Log!]!,
+},
+
+type User{
+    id: String!,
+    login: String!,
+    pw: String!,
+    messages: [Message!]!,
+},
+
+type Message {
+    id: String!
+    content: String!
+    time: String!
+    category: String!
+},
+
+type Categories {
+    geral: Int!,
+    esportes: Int!,
+    cinema: Int!,
+}
+
+type Log {
+    operation: String!,
+    time: String!,
+}
+
+type Mutation {
+    postMessage(content: String!, category: String!): Message!,
+    userSignUp(login: String!, pw: String!): User!,
+}
+
+type Subscription {
+    geral(login: String!, pw: String!): Message!,
+    cinema(login: String!, pw: String!): Message!,
+    esportes(login: String!, pw: String!): Message!,
+    logSubscribe(login: String!, pw: String!): [Log!]!,
+}
