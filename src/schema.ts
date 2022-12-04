@@ -4,7 +4,7 @@ import { GraphQLError } from 'graphql'
 
 import { createPubSub } from 'graphql-yoga'
 
-const pubSub = createPubSub()
+export const pubSub = createPubSub()
 
 
 const typeDefinitions = `
@@ -45,7 +45,7 @@ type Mutation {
 }
 
 type Subscription {
-    userCategorySubscribe(login: String!, pw: String!, category: String!): String!,
+    userCategorySubscribe(login: String!, pw: String!, category: String!): Message!,
 }
 `
 
@@ -182,7 +182,7 @@ const resolvers = {
             }
             messages.push(message)
             messages.sort(custom_sort)
-            pubSub.publish('message', args.category, message)
+            pubSub.publish('userCategorySubscribe', args.category, message)
             logs.push({
                 operation: 'Mutation',
                 time: Date().toLocaleString()
@@ -217,7 +217,7 @@ const resolvers = {
                                 operation: 'Subscription',
                                 time: Date().toLocaleString()
                             })
-                            return pubSub.subscribe('message', args.category)
+                            return pubSub.subscribe('userCategorySubscribe', args.category)
                         } 
                     } 
                     return Promise.reject(
