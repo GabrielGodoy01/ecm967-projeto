@@ -46,6 +46,7 @@ type Mutation {
 
 type Subscription {
     userCategorySubscribe(login: String!, pw: String!, category: String!): Message!,
+    logSubscribe(login: String!, pw: String!): [Log!]!,
 }
 `
 
@@ -133,6 +134,10 @@ const resolvers = {
                 operation: 'Query',
                 time: Date().toLocaleString()
             })
+            pubSub.publish("logSubscribe", {
+                operation: 'Mutation',
+                time: Date().toLocaleString()
+            })
             return categories
         },
         getMessagesByCategory: (parent: unknown, args: { category: string }) => {
@@ -149,10 +154,15 @@ const resolvers = {
                 time: Date().toLocaleString()
             }
             logs.push(log)
+            pubSub.publish("logSubscribe", log)
             return messagesFilter
         },
         getLogs : (parent: unknown, args: { login: string, pw: string }) => {
             if(args.login === 'admin' && args.pw === 'admin') {
+                pubSub.publish("logSubscribe", {
+                    operation: 'Mutation',
+                    time: Date().toLocaleString()
+                })
                 return logs
             } else {
                 return Promise.reject(
@@ -187,6 +197,10 @@ const resolvers = {
                 operation: 'Mutation',
                 time: Date().toLocaleString()
             })
+            pubSub.publish("logSubscribe", {
+                operation: 'Mutation',
+                time: Date().toLocaleString()
+            })
             return message
         },
         userSignUp: (parent: unknown, args: { login: string, pw: string }) => {
@@ -200,6 +214,10 @@ const resolvers = {
             }
             users.push(user)
             logs.push({
+                operation: 'Mutation',
+                time: Date().toLocaleString()
+            })
+            pubSub.publish("logSubscribe", {
                 operation: 'Mutation',
                 time: Date().toLocaleString()
             })
@@ -232,8 +250,19 @@ const resolvers = {
                         )
                     )
                 }
+            },
+            payload: (payload: any) => payload
+          },
+          logSubscribe: {
+            subscribe: async function* (parent: unknown, args: { login: string, pw: string })  {
+                if(args.login === 'admin' && args.pw === 'admin') {
+                    pubSub.subscribe("logSubscribe")
+                    return logs
+                }
             }
-          },}
+          }
+        
+        }
     }
 
 export const schema = makeExecutableSchema({
