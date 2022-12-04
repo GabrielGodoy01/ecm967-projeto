@@ -104,7 +104,7 @@ export const resolvers = {
             }
             messages.push(message)
             messages.sort(custom_sort)
-            pubSub.publish(args.category, message)
+            ctx.pubSub.publish(args.category, message)
             addLog(ctx, 'Mutation')
             return message
         },
